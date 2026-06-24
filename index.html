@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Révision IT / Cybersécurité</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f1117">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Révision IT">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<!-- Fonts preconnect for perf -->
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Background orbs -->
+<div class="bg-orbs" aria-hidden="true" data-testid="bg-orbs"><span></span><span></span><span></span></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo" data-testid="brand-logo-wrap">
+    <img src="logo.svg" alt="Révision IT" />
+    <span style="background:none;-webkit-text-fill-color:initial;color:var(--text);font-weight:700">Révision</span><span>IT</span>
+  </div>
+  <div class="nav-search-wrap">
+    <svg class="nav-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input class="search-box" type="text" id="search-box" placeholder="Rechercher une fiche…" autocomplete="off">
+    <span class="nav-count" id="nav-count"></span>
+  </div>
+  <div class="nav-right">
+    <div class="stat-chip">Fiches : <span id="stat-total">0</span></div>
+    <div class="stat-chip">Vues : <span id="stat-seen">0</span></div>
+    <div class="stat-chip">Maîtrisées : <span id="stat-mastered">0</span></div>
+    <button class="nav-btn" onclick="openReset()" title="Paramètres">⚙️</button>
+    <button class="nav-btn" id="dark-toggle" onclick="toggleDark()" title="Thème">🌙</button>
+  </div>
+</nav>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">// MODE</div>
+      <div class="mode-list">
+        <button class="mode-pill active" onclick="setMode('home',this)" data-mode="home">🏠 Accueil</button>
+        <button class="mode-pill" onclick="setMode('fiches',this)" data-mode="fiches">📋 Fiches</button>
+        <button class="mode-pill" onclick="setMode('flashcard',this)" data-mode="flashcard">🃏 Flashcards</button>
+        <button class="mode-pill" onclick="setMode('quiz',this)" data-mode="quiz">🎯 Quiz</button>
+        <button class="mode-pill" onclick="setMode('anki',this)" data-mode="anki">🧠 Anki SRS</button>
+        <button class="mode-pill" onclick="setMode('terminal',this)" data-mode="terminal">💻 Terminal</button>
+        <button class="mode-pill" onclick="setMode('stats',this)" data-mode="stats">📊 Stats</button>
+        <button class="mode-pill" onclick="setMode('pieges',this)" data-mode="pieges">⚠️ Pièges</button>
+        <button class="mode-pill" onclick="setMode('exam',this)" data-mode="exam">📝 Examen Blanc</button>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">// CATÉGORIE</div>
+      <div id="filters" class="cat-list"></div>
+    </div>
+
+    <div class="sidebar-stat">
+      <span id="stat-quiz" style="font-family:var(--mono);font-size:22px;font-weight:800;color:var(--accent)">—</span>
+      <span class="stat-label">meilleur quiz</span>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- FICHES -->
+    <div id="fiche-view">
+      <div class="fiche-toolbar">
+        <button class="weak-btn" id="weak-filter-btn" onclick="toggleWeakFilter(this)">⚠️ À revoir</button>
+        <select id="sort-select" onchange="renderCards()" class="sort-select">
+          <option value="default">Défaut</option>
+          <option value="level-asc">Niveau ↑</option>
+          <option value="level-desc">Niveau ↓</option>
+          <option value="alpha">A–Z</option>
+        </select>
+        <span class="progress-label" id="progress-label">0 fiches vues</span>
+        <span class="progress-pct" id="progress-pct">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      <div class="cards-grid" id="cards-grid"></div>
+      <div class="no-results" id="no-results" style="display:none">Aucune fiche trouvée.</div>
+    </div>
+
+    <!-- FLASHCARDS -->
+    <div id="flashcard-view" style="display:none">
+      <div class="fc-controls">
+        <select class="fc-cat-select" id="fc-cat-select" onchange="initFlashcards()">
+          <option value="all">Toutes les catégories</option>
+        </select>
+        <button class="mode-btn" onclick="shuffleFlashcards()">🔀 Mélanger</button>
+        <span class="fc-counter" id="fc-counter"></span>
+      </div>
+      <div class="flashcard-wrap" onclick="flipCard()" id="fc-wrap">
+        <div class="flashcard" id="flashcard">
+          <div class="fc-face fc-front">
+            <span class="fc-hint">Cliquer pour voir la réponse</span>
+            <div class="fc-main" id="fc-front-text">—</div>
+            <div class="fc-sub" id="fc-front-sub"></div>
+          </div>
+          <div class="fc-face fc-back">
+            <span class="fc-hint">Définition</span>
+            <div class="fc-main" id="fc-back-text">—</div>
+            <div class="fc-sub" id="fc-back-sub">À retenir</div>
+          </div>
+        </div>
+      </div>
+      <div class="fc-nav">
+        <button class="fc-btn" id="fc-prev" onclick="fcNavigate(-1)" disabled>← Préc.</button>
+        <button class="fc-btn fc-flip-btn" onclick="flipCard()">↩ Retourner</button>
+        <button class="fc-btn" id="fc-next" onclick="fcNavigate(1)">Suiv. →</button>
+      </div>
+      <div class="fc-progress" id="fc-dots"></div>
+    </div>
+
+    <!-- QUIZ -->
+    <div id="quiz-view" style="display:none">
+      <div class="quiz-header">
+        <div class="quiz-cat-filter" id="quiz-cat-filter"></div>
+        <div class="quiz-settings">
+          <select class="quiz-count-select" id="quiz-count">
+            <option value="10">10 Q</option>
+            <option value="20">20 Q</option>
+            <option value="25" selected>25 Q</option>
+            <option value="40">40 Q</option>
+            <option value="0">Toutes</option>
+          </select>
+          <select class="quiz-count-select" id="quiz-timer-sel">
+            <option value="0">Sans timer</option>
+            <option value="20">20s / Q</option>
+            <option value="30" selected>30s / Q</option>
+            <option value="45">45s / Q</option>
+          </select>
+        </div>
+      </div>
+      <div class="quiz-info">🎯 <strong>Mode Quiz</strong> — Choisis une catégorie et clique sur la bonne réponse.</div>
+      <div id="quiz-area"></div>
+    </div>
+
+    <!-- STATS -->
+    <div id="stats-view" style="display:none">
+      <div class="section-label" style="margin-bottom:1rem">Progression par catégorie</div>
+      <div class="cat-stats" id="cat-stats-container"></div>
+    </div>
+
+    <!-- PIÈGES -->
+    <div id="pieges-view" style="display:none">
+      <div class="pieges-toolbar">
+        <div class="pieges-info">⚠️ <strong>Pièges à connaître</strong> — Tous les pièges classiques regroupés en un seul endroit. Clique sur une carte pour ouvrir la fiche complète.</div>
+        <input class="search-box pieges-search" type="text" id="pieges-search" placeholder="Filtrer les pièges…" autocomplete="off">
+      </div>
+      <div class="pieges-cat-filter" id="pieges-cat-filter"></div>
+      <div class="pieges-grid" id="pieges-grid"></div>
+      <div class="no-results" id="pieges-no-results" style="display:none">Aucun piège trouvé.</div>
+    </div>
+
+    <!-- EXAMEN BLANC -->
+    <div id="exam-view" style="display:none">
+      <div id="exam-area"></div>
+    </div>
+
+    <!-- TERMINAL -->
+    <div id="terminal-view" style="display:none">
+      <div class="term-header">
+        <div class="term-tabs" id="term-tabs"></div>
+        <div class="term-info" id="term-info"></div>
+      </div>
+      <div class="term-shell" id="term-shell">
+        <div class="term-output" id="term-output"></div>
+        <div class="term-input-row">
+          <span class="term-prompt" id="term-prompt">$</span>
+          <input class="term-input" id="term-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="tape une commande…">
+        </div>
+      </div>
+      <div class="term-help" id="term-help"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Overlay détail fiche -->
+<div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
+  <div class="panel" id="panel">
+    <button class="close-btn" onclick="closeDetail()">✕ Fermer</button>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<!-- Modal reset -->
+<div class="reset-modal" id="reset-modal">
+  <div class="reset-box">
+    <h3>⚙️ Paramètres</h3>
+    <p>Choisis ce que tu veux effacer.</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1.25rem;text-align:left">
+      <label style="font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="reset-seen" checked> Fiches vues &amp; niveaux
+      </label>
+      <label style="font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="reset-quiz"> Meilleur score quiz
+      </label>
+    </div>
+    <div class="reset-actions">
+      <button class="reset-cancel" onclick="closeReset()">Annuler</button>
+      <button class="reset-confirm" onclick="confirmReset()">🗑️ Réinitialiser</button>
+    </div>
+    <div class="reset-actions" style="margin-top:8px">
+      <button class="reset-cancel" onclick="exportProgress()">📤 Exporter</button>
+      <button class="reset-cancel" onclick="triggerImportProgress()">📥 Importer</button>
+    </div>
+    <input type="file" id="import-progress-input" accept="application/json" style="display:none" onchange="importProgress(event)">
+    <div class="shortcuts-section">
+      <div class="shortcuts-title">⌨️ Raccourcis clavier</div>
+      <div class="shortcuts-grid">
+        <span class="shortcut-key">Échap</span><span class="shortcut-desc">Fermer panneau / modal</span>
+        <span class="shortcut-key">/</span><span class="shortcut-desc">Ouvrir la recherche</span>
+        <span class="shortcut-key">← →</span><span class="shortcut-desc">Fiche précédente / suivante</span>
+        <span class="shortcut-key">1–5</span><span class="shortcut-desc">Niveau de maîtrise (panneau fiche)</span>
+        <span class="shortcut-key">m</span><span class="shortcut-desc">Marquer fiche comme vue</span>
+        <span class="shortcut-key">Espace</span><span class="shortcut-desc">Retourner la flashcard / Anki</span>
+        <span class="shortcut-key">1–4</span><span class="shortcut-desc">Répondre (Quiz &amp; Examen)</span>
+        <span class="shortcut-key">1–4</span><span class="shortcut-desc">Noter la carte Anki</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- IDs legacy pour compatibilité script.js -->
+<span id="subtitle-text" style="display:none"></span>
+
+<script src="data.js"></script>
+<script src="terminal-data.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
